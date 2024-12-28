@@ -21,24 +21,38 @@ public class RentalPCWithLogin {
 
         // Login Frame
         JFrame loginFrame = new JFrame("Login Admin");
-        loginFrame.setSize(400, 200);
+        loginFrame.setSize(400, 300);
         loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        loginFrame.setLayout(new GridLayout(3, 2));
+        loginFrame.setLayout(new BorderLayout());
 
+        // Panel Logo
+        JPanel logoPanel = new JPanel();
+        JLabel logoLabel = new JLabel();
+        logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        // Set ikon logo
+        ImageIcon logoIcon = new ImageIcon("Komputer.png"); // Ganti dengan path file gambar Anda
+        Image scaledImage = logoIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+        logoLabel.setIcon(new ImageIcon(scaledImage));
+        logoPanel.add(logoLabel);
+
+        // Panel Login
+        JPanel loginPanel = new JPanel(new GridLayout(3, 2, 5, 5));
         JLabel usernameLabel = new JLabel("Username:");
         JTextField usernameField = new JTextField();
-
         JLabel passwordLabel = new JLabel("Password:");
         JPasswordField passwordField = new JPasswordField();
-
         JButton loginButton = new JButton("Login");
 
-        loginFrame.add(usernameLabel);
-        loginFrame.add(usernameField);
-        loginFrame.add(passwordLabel);
-        loginFrame.add(passwordField);
-        loginFrame.add(new JLabel());
-        loginFrame.add(loginButton);
+        loginPanel.add(usernameLabel);
+        loginPanel.add(usernameField);
+        loginPanel.add(passwordLabel);
+        loginPanel.add(passwordField);
+        loginPanel.add(new JLabel()); // Spacer
+        loginPanel.add(loginButton);
+
+        // Tambahkan komponen ke Frame Login
+        loginFrame.add(logoPanel, BorderLayout.NORTH);
+        loginFrame.add(loginPanel, BorderLayout.CENTER);
 
         loginFrame.setVisible(true);
 
@@ -147,6 +161,7 @@ public class RentalPCWithLogin {
                 String username = usernameField.getText();
                 String password = new String(passwordField.getPassword());
 
+                // Validasi Admin
                 if ("admin".equals(username) && "password".equals(password)) {
                     loginFrame.dispose();
                     mainFrame.setVisible(true);
@@ -161,11 +176,16 @@ public class RentalPCWithLogin {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    String name = nameField.getText();
-                    String password = new String(customerPasswordField.getPassword());
-                    int time = Integer.parseInt(timeField.getText());
-                    int rate = Integer.parseInt(rateField.getText());
+                    String name = nameField.getText().trim();
+                    String password = new String(customerPasswordField.getPassword()).trim();
+                    int time = Integer.parseInt(timeField.getText().trim());
+                    int rate = Integer.parseInt(rateField.getText().trim());
                     int selectedPC = pcComboBox.getSelectedIndex() + 1;
+
+                    if (name.isEmpty() || password.isEmpty()) {
+                        JOptionPane.showMessageDialog(mainFrame, "Nama atau password tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
 
                     if (!pcStatus.get(selectedPC)) {
                         JOptionPane.showMessageDialog(mainFrame, "PC " + selectedPC + " sedang digunakan!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -173,8 +193,7 @@ public class RentalPCWithLogin {
                     }
 
                     if (!customerPasswords.containsKey(name)) {
-                        JOptionPane.showMessageDialog(mainFrame, "Pelanggan belum terdaftar. Silakan daftar terlebih dahulu.", "Error", JOptionPane.ERROR_MESSAGE);
-                        int choice = JOptionPane.showConfirmDialog(mainFrame, "Daftar pengguna baru?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+                        int choice = JOptionPane.showConfirmDialog(mainFrame, "Pelanggan belum terdaftar. Ingin mendaftarkan pengguna baru?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
                         if (choice == JOptionPane.YES_OPTION) {
                             registerNewCustomer(name, password);
                         }
@@ -187,11 +206,8 @@ public class RentalPCWithLogin {
                     }
 
                     int totalCost = time * rate;
-
-                    // Dapatkan tanggal dan waktu sekarang
                     LocalDateTime now = LocalDateTime.now();
-                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                    String formattedDateTime = now.format(formatter);
+                    String formattedDateTime = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
                     // Tandai PC sebagai digunakan
                     pcStatus.put(selectedPC, false);
@@ -206,7 +222,7 @@ public class RentalPCWithLogin {
                     customerPasswordField.setText("");
 
                 } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(mainFrame, "Input tidak valid. Harap masukkan angka untuk waktu.", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(mainFrame, "Input tidak valid. Harap masukkan angka untuk waktu dan tarif.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -231,10 +247,10 @@ public class RentalPCWithLogin {
                 // Jendela Baru untuk Pembayaran
                 JFrame paymentFrame = new JFrame("Pembayaran");
                 paymentFrame.setSize(400, 200);
-                paymentFrame.setLayout(new GridLayout(3, 2));
+                paymentFrame.setLayout(new GridLayout(3, 2, 5, 5));
 
                 JLabel totalLabel = new JLabel("Total Biaya:");
-                JTextField totalField = new JTextField(String.valueOf(totalCost));
+                JTextField totalField = new JTextField("Rp " + totalCost);
                 totalField.setEditable(false);
 
                 JLabel paymentLabel = new JLabel("Nominal Bayar:");
@@ -246,9 +262,10 @@ public class RentalPCWithLogin {
                 paymentFrame.add(totalField);
                 paymentFrame.add(paymentLabel);
                 paymentFrame.add(paymentField);
-                paymentFrame.add(new JLabel());
+                paymentFrame.add(new JLabel()); // Spacer
                 paymentFrame.add(confirmButton);
 
+                paymentFrame.setLocationRelativeTo(mainFrame); // Letakkan di tengah mainFrame
                 paymentFrame.setVisible(true);
 
                 // Action Listener untuk Konfirmasi Pembayaran
@@ -256,11 +273,13 @@ public class RentalPCWithLogin {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         try {
-                            int payment = Integer.parseInt(paymentField.getText());
+                            String paymentInput = paymentField.getText().trim().replaceAll("[^0-9]", "");
+                            int payment = Integer.parseInt(paymentInput);
                             if (payment < totalCost) {
                                 JOptionPane.showMessageDialog(paymentFrame, "Pembayaran tidak cukup!", "Error", JOptionPane.ERROR_MESSAGE);
                             } else {
-                                JOptionPane.showMessageDialog(paymentFrame, "Pembayaran berhasil! Kembalian: " + (payment - totalCost));
+                                int change = payment - totalCost;
+                                JOptionPane.showMessageDialog(paymentFrame, "Pembayaran berhasil! Kembalian: Rp " + change, "Info", JOptionPane.INFORMATION_MESSAGE);
 
                                 // Tulis Nota ke File
                                 try (BufferedWriter writer = new BufferedWriter(new FileWriter("Nota_" + customerName + ".txt"))) {
@@ -272,10 +291,11 @@ public class RentalPCWithLogin {
                                     writer.write("Tanggal Pemesanan: " + orderDateTime + "\n");
                                     writer.write("Total Biaya: Rp " + totalCost + "\n");
                                     writer.write("Pembayaran: Rp " + payment + "\n");
-                                    writer.write("Kembalian: Rp " + (payment - totalCost) + "\n");
+                                    writer.write("Kembalian: Rp " + change + "\n");
                                     writer.write("============================\n");
                                 } catch (IOException ioException) {
                                     ioException.printStackTrace();
+                                    JOptionPane.showMessageDialog(paymentFrame, "Gagal menulis nota ke file.", "Error", JOptionPane.ERROR_MESSAGE);
                                 }
 
                                 // Hapus baris dari tabel
